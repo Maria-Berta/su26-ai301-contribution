@@ -1,15 +1,20 @@
-# Contribution [#]: [Issue Title]
+# Contribution [#]: [[Bug]: Adding system versioning to a table makes foreign keys unusable
+ #20095]
 
-**Contribution Number:** [1 / 2 / 3]  
-**Student:** [Your Name]  
-**Issue:** [GitHub issue link]  
-**Status:** [Phase I / Phase II / Phase III / Phase IV] [In Progress / Complete]
+**Contribution Number:** [1]  
+**Student:** [Mariamawit Berta]  
+**Issue:** [[GitHub issue link](https://github.com/phpmyadmin/phpmyadmin/issues/20095)]  
+**Status:** [Phase I Complete]
 
 ---
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
+[I chose this issue because it combines two areas I'm passionate about: SQL/database work and debugging. As a student in CodePath AI301, I've worked extensively with data — including processing 2.5B+ records for a USPS performance analysis project — so understanding how foreign keys and table structures work is familiar territory.
+
+I also wanted an issue that touches backend/database logic rather than just frontend UI. While I've built AI applications with Next.js and OpenAI, I'm eager to learn more about how database tools like phpMyAdmin work under the hood. This issue feels like a perfect learning opportunity: it's well-scoped, has a clear reproduction path, and involves parsing SHOW CREATE TABLE output — something I've used many times but never thought about how it's implemented.
+
+Finally, I chose this issue because a maintainer already gave a helpful clue about PERIOD FOR SYSTEM_TIME being added before constraints. That tells me the community is supportive and the fix is likely achievable for a first-time contributor.]
 
 ---
 
@@ -17,19 +22,21 @@
 
 ### Problem Description
 
-[In your own words, what's broken or missing?]
+[When a MariaDB table has system versioning enabled (using ADD SYSTEM VERSIONING), phpMyAdmin stops recognizing and displaying foreign keys on that table. The foreign keys still exist in the database and appear in SHOW CREATE TABLE, but phpMyAdmin's UI doesn't show them in "Relation View" or create clickable links in the "Browse" tab.]
 
 ### Expected Behavior
 
-[What should happen?]
+[Foreign keys should appear in the "Relation View" section and in the "Browse" tab, foreign key values should be clickable links that navigate to the referenced table]
 
 ### Current Behavior
 
-[What actually happens?]
+[phpmyadmin acts as if there was no more foreign keys on this table, but they are still there]
 
 ### Affected Components
 
-[Which parts of the codebase are involved?]
+[The issue likely affects the foreign key parser and the table structure display logic. Based on the maintainer's clue, I suspect the problem is in how `SHOW CREATE TABLE` output is parsed — specifically when a `PERIOD FOR SYSTEM_TIME` line appears before foreign key constraints.
+
+I'll identify the exact files after setting up the development environment locally.]
 
 ---
 
