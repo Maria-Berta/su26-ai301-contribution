@@ -30,7 +30,7 @@ Finally, I chose this issue because a maintainer already gave a helpful clue abo
 
 ### Current Behavior
 
-[phpmyadmin acts as if there was no more foreign keys on this table, but they are still there]
+[phpMyAdmin acts as if there are no more foreign keys on this table, but they are still there]
 
 ### Affected Components
 
