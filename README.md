@@ -4,7 +4,7 @@
 **Contribution Number:** [1]  
 **Student:** [Mariamawit Berta]  
 **Issue:** [[GitHub issue link](https://github.com/phpmyadmin/phpmyadmin/issues/20095)]  
-**Status:** [Phase I Complete]
+**Status:** [Phase III almost complete]
 
 ---
 
@@ -223,16 +223,17 @@ Using UMPIRE framework (adapted):
 
 **Understand:** [When a MariaDB table has system versioning enabled (using ADD SYSTEM VERSIONING), phpMyAdmin stops recognizing and displaying foreign keys on that table. The foreign keys still exist in the database and appear in SHOW CREATE TABLE, but phpMyAdmin's UI doesn't show them in "Relation View" or create clickable links in the "Browse" tab.]
 
-**Match:** [What similar patterns/solutions exist in the codebase?]
+**Match:** [The fix follows the same pattern used elsewhere in phpMyAdmin where SHOW CREATE TABLE output is pre-processed before regex matching — strip unexpected clauses before parsing.]
 
 **Plan:** [Step-by-step implementation plan]
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
+1. Run grep -rn "FOREIGN KEY\|parseForeign" src/ --include="*.php" to locate the exact file and method
+2. Add a preg_replace call to strip PERIOD FOR SYSTEM_TIME from the string before the existing regex runs
+3. Add a unit test that passes a SHOW CREATE TABLE string containing PERIOD FOR SYSTEM_TIME to the parser and asserts the foreign key is still found
+4. Run the full test suite to confirm no regressions
+   
+**Implement:** (branch link to be added)
 
-**Implement:** [Link to your branch/commits as you work]
-
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
+**Review:** [Check that the change follows phpMyAdmin's coding standards, has no unrelated whitespace changes, and includes a test.]
 
 **Evaluate:** [How will you verify it works?]
 - [ ] Foreign keys are correctly shown in phpMyAdmin's Relation view for system-versioned tables
@@ -247,26 +248,35 @@ Using UMPIRE framework (adapted):
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- [ ] Test case 1: [Test that foreign keys are correctly parsed when PERIOD FOR SYSTEM_TIME is present in the SHOW CREATE TABLE string]
+- [ ] Test case 2: [Test that foreign keys are still correctly parsed for non-versioned tables (no regression)]
+- [ ] Test case 3: [Test that the regex strips PERIOD FOR SYSTEM_TIME with varying whitespace formats]
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- [ ] Navigate to Relation View on a system-versioned table and confirm foreign key is shown
+- [ ] Confirm clickable FK links appear in Browse tab for system-versioned tables
 
 ### Manual Testing
 
 [What you tested manually and results]
-
+(to be completed once environment is fully set up)
 ---
 
 ## Implementation Notes
 
-### Week [X] Progress
+### Week [3] Progress
 
-[What you built this week, challenges faced, decisions made]
+[This week I focused on deeply understanding the issue, setting up the local development environment, and planning the fix. I read through the GitHub issue thread, understood the role of SHOW CREATE TABLE and how phpMyAdmin parses it, and identified the root cause as the PERIOD FOR SYSTEM_TIME clause breaking the foreign key regex.
+
+I ran into significant environment setup challenges — Docker and PHP both failed to install due to macOS 13 (Ventura) compatibility issues. After multiple troubleshooting attempts including trying older Docker versions and debugging Homebrew compilation failures, I identified the OS as the root cause and upgraded to macOS Tahoe (macOS 15). Environment setup will be completed and the fix implemented once the OS upgrade finishes.
+
+Code Changes
+
+
+Files to modify: src/Table/Table.php (or equivalent — to be confirmed with grep)
+Key commits: (to be added)
+Approach decision: Chose pre-processing over regex modification because it is simpler, more readable, and less risky for reviewers to assess]
 
 ### Week [Y] Progress
 
