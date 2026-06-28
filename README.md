@@ -26,17 +26,21 @@ Finally, I chose this issue because a maintainer already gave a helpful clue abo
 
 ### Expected Behavior
 
-[Foreign keys should appear in the "Relation View" section and in the "Browse" tab, foreign key values should be clickable links that navigate to the referenced table]
+[Foreign keys should appear in the "Relation View" section and in the "Browse" tab, foreign key values should be clickable links that navigate to the referenced table — exactly as they do for non-versioned tables.]
 
 ### Current Behavior
 
-[phpMyAdmin acts as if there are no more foreign keys on this table, but they are still there]
+[phpMyAdmin acts as if there are no foreign keys on the table, even though they still exist in the database and are visible in SHOW CREATE TABLE.]
 
 ### Affected Components
 
 [The issue likely affects the foreign key parser and the table structure display logic. Based on the maintainer's clue, I suspect the problem is in how `SHOW CREATE TABLE` output is parsed — specifically when a `PERIOD FOR SYSTEM_TIME` line appears before foreign key constraints.
 
-I'll identify the exact files after setting up the development environment locally.]
+I'll identify the exact files after setting up the development environment locally.
+
+Update:
+
+The issue affects src/ConfigStorage/Relation.php in phpMyAdmin, specifically the getForeignKeysData() method at line 429. This method calls SHOW CREATE TABLE and passes the result to the phpmyadmin/sql-parser library. When MariaDB system versioning is enabled, the SHOW CREATE TABLE output includes two new constructs that the SQL parser library has never been taught to handle — GENERATED ALWAYS AS ROW START/END columns and a PERIOD FOR SYSTEM_TIME clause — causing the parser to fail silently and return no foreign keys.]
 
 ---
 
@@ -50,7 +54,8 @@ I'll identify the exact files after setting up the development environment local
 Docker Desktop — runs MariaDB as a container so there is no need to install a database server directly on the machine
 PHP 8.2+ — required to run phpMyAdmin locally via its built-in development server
 Composer 2.x — phpMyAdmin's dependency manager; installs all required PHP libraries from composer.json
-MariaDB 10.11 (via Docker) — the specific database version needed to test system versioning behaviour]
+MariaDB 10.11 (via Docker) — the specific database version needed to test system versioning behaviour
+Node.js / Yarn — required to build phpMyAdmin's frontend assets]
 
 ### Setup Challenges
 
