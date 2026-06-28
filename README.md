@@ -181,7 +181,6 @@ Notice the output includes `PERIOD FOR SYSTEM_TIME (`ts`, `te`),` appearing befo
 
 <img width="1435" height="777" alt="Screenshot 2026-06-28 at 2 49 03 PM" src="https://github.com/user-attachments/assets/b7d7ef94-1f31-4ead-80ac-92479d4eea3c" />
 <img width="1440" height="900" alt="Screenshot 2026-06-28 at 3 18 30 PM" src="https://github.com/user-attachments/assets/de2eb724-39f1-462f-94f7-215112965254" />
-
 <img width="1440" height="900" alt="Screenshot 2026-06-28 at 3 28 24 PM" src="https://github.com/user-attachments/assets/7f7a2d11-1a69-484d-92de-2bb760350e00" />
 
 
