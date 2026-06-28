@@ -172,9 +172,19 @@ Notice the output includes `PERIOD FOR SYSTEM_TIME (`ts`, `te`),` appearing befo
 
 ### Reproduction Evidence (Will be adding on this)
 
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [Observation during reproduction]
+- Bug: Relation View shows empty Foreign key constraints section despite the foreign key existing in the database
+  <img width="1440" height="900" alt="Screenshot 2026-06-26 at 2 31 03 PM" src="https://github.com/user-attachments/assets/60a704a4-5d65-4a7b-a5fd-b61a78b30662" />
+
+- Root cause confirmed: SHOW CREATE TABLE terminal output shows PERIOD FOR SYSTEM_TIME and GENERATED ALWAYS AS ROW START/END present before the CONSTRAINT line
+  <img width="1440" height="900" alt="Screenshot 2026-06-26 at 6 59 50 PM" src="https://github.com/user-attachments/assets/351dc51b-162d-4584-a736-d1697569206a" />
+
+- Fix verified: After applying the fix, Relation View correctly shows fk_customer with customer_id → testdb.customers.id (screenshot)
+
+<img width="1435" height="777" alt="Screenshot 2026-06-28 at 2 49 03 PM" src="https://github.com/user-attachments/assets/b7d7ef94-1f31-4ead-80ac-92479d4eea3c" />
+<img width="1440" height="900" alt="Screenshot 2026-06-28 at 3 28 24 PM" src="https://github.com/user-attachments/assets/7f7a2d11-1a69-484d-92de-2bb760350e00" />
+
+
+
 
 ---
 
