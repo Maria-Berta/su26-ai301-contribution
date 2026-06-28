@@ -10,11 +10,11 @@
 
 ## Why I Chose This Issue
 
-[I chose this issue because it combines two areas I'm passionate about: SQL/database work and debugging. As a computer science student and data enthusiast, I've worked extensively with data — including processing 2.5B+ records for a USPS performance analysis project — so understanding how foreign keys and table structures work is familiar territory.
+I chose this issue because it combines two areas I'm passionate about: SQL/database work and debugging. As a computer science student and data enthusiast, I've worked extensively with data — including processing 2.5B+ records for a USPS performance analysis project — so understanding how foreign keys and table structures work is familiar territory.
 
 I also wanted an issue that touches backend/database logic rather than just frontend UI. While I've built AI applications with Next.js and OpenAI, I'm eager to learn more about how database tools like phpMyAdmin work under the hood. This issue feels like a perfect learning opportunity for a beginer to open source like myself as it's well-scoped and has a clear reproduction path.
 
-Finally, I chose this issue because a maintainer already gave a helpful clue about PERIOD FOR SYSTEM_TIME being added before constraints. That tells me the community is supportive and the fix is likely achievable for a first-time contributor.]
+Finally, I chose this issue because a maintainer already gave a helpful clue about PERIOD FOR SYSTEM_TIME being added before constraints. That tells me the community is supportive and the fix is likely achievable for a first-time contributor.
 
 ---
 
@@ -22,25 +22,25 @@ Finally, I chose this issue because a maintainer already gave a helpful clue abo
 
 ### Problem Description
 
-[When a MariaDB table has system versioning enabled (using ADD SYSTEM VERSIONING), phpMyAdmin stops recognizing and displaying foreign keys on that table. The foreign keys still exist in the database and appear in SHOW CREATE TABLE, but phpMyAdmin's UI doesn't show them in "Relation View" or create clickable links in the "Browse" tab.]
+When a MariaDB table has system versioning enabled (using ADD SYSTEM VERSIONING), phpMyAdmin stops recognizing and displaying foreign keys on that table. The foreign keys still exist in the database and appear in SHOW CREATE TABLE, but phpMyAdmin's UI doesn't show them in "Relation View" or create clickable links in the "Browse" tab.
 
 ### Expected Behavior
 
-[Foreign keys should appear in the "Relation View" section and in the "Browse" tab, foreign key values should be clickable links that navigate to the referenced table — exactly as they do for non-versioned tables.]
+Foreign keys should appear in the "Relation View" section and in the "Browse" tab, foreign key values should be clickable links that navigate to the referenced table — exactly as they do for non-versioned tables.
 
 ### Current Behavior
 
-[phpMyAdmin acts as if there are no foreign keys on the table, even though they still exist in the database and are visible in SHOW CREATE TABLE.]
+phpMyAdmin acts as if there are no foreign keys on the table, even though they still exist in the database and are visible in SHOW CREATE TABLE.
 
 ### Affected Components
 
-[The issue likely affects the foreign key parser and the table structure display logic. Based on the maintainer's clue, I suspect the problem is in how `SHOW CREATE TABLE` output is parsed — specifically when a `PERIOD FOR SYSTEM_TIME` line appears before foreign key constraints.
+The issue likely affects the foreign key parser and the table structure display logic. Based on the maintainer's clue, I suspect the problem is in how `SHOW CREATE TABLE` output is parsed — specifically when a `PERIOD FOR SYSTEM_TIME` line appears before foreign key constraints.
 
 I'll identify the exact files after setting up the development environment locally.
 
 Update:
 
-The issue affects src/ConfigStorage/Relation.php in phpMyAdmin, specifically the getForeignKeysData() method at line 429. This method calls SHOW CREATE TABLE and passes the result to the phpmyadmin/sql-parser library. When MariaDB system versioning is enabled, the SHOW CREATE TABLE output includes two new constructs that the SQL parser library has never been taught to handle — GENERATED ALWAYS AS ROW START/END columns and a PERIOD FOR SYSTEM_TIME clause — causing the parser to fail silently and return no foreign keys.]
+The issue affects src/ConfigStorage/Relation.php in phpMyAdmin, specifically the getForeignKeysData() method at line 429. This method calls SHOW CREATE TABLE and passes the result to the phpmyadmin/sql-parser library. When MariaDB system versioning is enabled, the SHOW CREATE TABLE output includes two new constructs that the SQL parser library has never been taught to handle — GENERATED ALWAYS AS ROW START/END columns and a PERIOD FOR SYSTEM_TIME clause — causing the parser to fail silently and return no foreign keys.
 
 ---
 
@@ -48,14 +48,14 @@ The issue affects src/ConfigStorage/Relation.php in phpMyAdmin, specifically the
 
 ### Environment Setup
 
-[The local environment requires four tools working together: Docker Desktop to run MariaDB in an isolated container without installing it directly on the machine, PHP to serve phpMyAdmin's codebase, Composer to install phpMyAdmin's PHP dependencies, and MariaDB 10.11 (running inside Docker) as the actual database engine to reproduce the bug against.
+The local environment requires four tools working together: Docker Desktop to run MariaDB in an isolated container without installing it directly on the machine, PHP to serve phpMyAdmin's codebase, Composer to install phpMyAdmin's PHP dependencies, and MariaDB 10.11 (running inside Docker) as the actual database engine to reproduce the bug against.
 
 
 Docker Desktop — runs MariaDB as a container so there is no need to install a database server directly on the machine
 PHP 8.2+ — required to run phpMyAdmin locally via its built-in development server
 Composer 2.x — phpMyAdmin's dependency manager; installs all required PHP libraries from composer.json
 MariaDB 10.11 (via Docker) — the specific database version needed to test system versioning behaviour
-Node.js / Yarn — required to build phpMyAdmin's frontend assets]
+Node.js / Yarn — required to build phpMyAdmin's frontend assets
 
 ### Setup Challenges
 
@@ -197,7 +197,7 @@ Notice the output includes `PERIOD FOR SYSTEM_TIME (`ts`, `te`),` appearing befo
 
 ### Analysis
 
-[phpMyAdmin reads the output of `SHOW CREATE TABLE` as a text string and uses a **regular expression (regex)** to find foreign key constraints. The regex looks for patterns like:
+phpMyAdmin reads the output of `SHOW CREATE TABLE` as a text string and uses a **regular expression (regex)** to find foreign key constraints. The regex looks for patterns like:
 
 ```
 CONSTRAINT `name` FOREIGN KEY (`col`) REFERENCES `table` (`col`)
