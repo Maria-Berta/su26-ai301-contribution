@@ -2,7 +2,8 @@
  #20095]
 
 **Contribution Number:** [1]  
-**Student:** [Mariamawit Berta]
+**Student:** Mariamawit Berta
+
 **Issue:** [[GitHub issue link](https://github.com/phpmyadmin/phpmyadmin/issues/20095)]  
 **Status:** Phase IV complete
 
