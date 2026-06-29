@@ -3,7 +3,6 @@
 
 **Contribution Number:** [1]  
 **Student:** Mariamawit Berta
-
 **Issue:** [[GitHub issue link](https://github.com/phpmyadmin/phpmyadmin/issues/20095)]  
 **Status:** Phase IV complete
 
@@ -365,9 +364,9 @@ I would grep the dependency library for the relevant keywords before writing any
 
 ## Resources Used
 
-- [[phpMyAdmin GitHub Issue #20095] (https://github.com/phpmyadmin/phpmyadmin/issues/20095)]
-- [[MariaDB System Versioning documentation] (https://mariadb.com/kb/en/system-versioned-tables/)]
-- [[phpMyAdmin CONTRIBUTING.md] (https://github.com/phpmyadmin/phpmyadmin/blob/master/CONTRIBUTING.md)]
-- [[phpmyadmin/sql-parser repository] (https://github.com/phpmyadmin/sql-parser)]
-- [[Homebrew Support Tiers] (https://docs.brew.sh/Support-Tiers)]
+- [[phpMyAdmin GitHub Issue #20095](https://github.com/phpmyadmin/phpmyadmin/issues/20095)]
+- [[MariaDB System Versioning documentation](https://mariadb.com/kb/en/system-versioned-tables/)]
+- [[phpMyAdmin CONTRIBUTING.md](https://github.com/phpmyadmin/phpmyadmin/blob/master/CONTRIBUTING.md)]
+- [[phpmyadmin/sql-parser repository](https://github.com/phpmyadmin/sql-parser)]
+- [[Homebrew Support Tiers](https://docs.brew.sh/Support-Tiers)]
 
