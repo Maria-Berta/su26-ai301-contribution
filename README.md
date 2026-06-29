@@ -310,7 +310,7 @@ Final fix: Switched to pre-processing the SHOW CREATE TABLE string in Relation.p
 
 ## Pull Request
 
-**PR Link:** [[GitHub PR URL when submitted]](https://github.com/phpmyadmin/phpmyadmin/pull/20346)
+**PR Link:** [Fix foreign key parsing broken by MariaDB system versioning](https://github.com/phpmyadmin/phpmyadmin/pull/20346)
 
 **PR Description:** 
 Fix foreign key parsing broken by MariaDB system versioning
@@ -332,6 +332,9 @@ The foreign keys themselves are unaffected.
 Fixes: #20095
 
 Signed-off-by: Mariamawit Berta <mariamawit21geremew@gmail.com>
+
+**Summary of Contribution:**
+Fixed a bug where phpMyAdmin's Relation View showed no foreign keys for MariaDB tables with system versioning enabled. The root cause was that `SHOW CREATE TABLE` output for system-versioned tables includes two constructs — `GENERATED ALWAYS AS ROW START/END` columns and a `PERIOD FOR SYSTEM_TIME` clause — that the `phpmyadmin/sql-parser` library does not handle. The fix pre-processes the SQL string in `getForeignKeysData()` to strip these constructs before parsing, allowing foreign keys to be correctly detected and displayed.
 
 **Maintainer Feedback:**
 - [Date]: [Summary of feedback received]
