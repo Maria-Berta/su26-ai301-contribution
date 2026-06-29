@@ -310,7 +310,7 @@ Final fix: Switched to pre-processing the SHOW CREATE TABLE string in Relation.p
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when submitted]
+**PR Link:** [[GitHub PR URL when submitted]](https://github.com/phpmyadmin/phpmyadmin/pull/20346)
 
 **PR Description:** 
 Fix foreign key parsing broken by MariaDB system versioning
