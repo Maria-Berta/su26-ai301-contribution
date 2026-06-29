@@ -197,111 +197,112 @@ Notice the output includes `PERIOD FOR SYSTEM_TIME (`ts`, `te`),` appearing befo
 
 ### Analysis
 
-phpMyAdmin reads the output of `SHOW CREATE TABLE` as a text string and uses a **regular expression (regex)** to find foreign key constraints. The regex looks for patterns like:
+phpMyAdmin reads the output of SHOW CREATE TABLE and passes it to the phpmyadmin/sql-parser library to extract foreign key information. When MariaDB system versioning is enabled, two new constructs appear that the parser library was never taught to handle:
 
-```
-CONSTRAINT `name` FOREIGN KEY (`col`) REFERENCES `table` (`col`)
-```
 
-When MariaDB system versioning is enabled on a table, the `SHOW CREATE TABLE` output gains an additional line:
+GENERATED ALWAYS AS ROW START/END — MariaDB adds these to the timestamp columns used for versioning. The parser knows GENERATED ALWAYS but not the AS ROW START/END variant. When it encounters ROW, it treats it as part of a column definition, enters the wrong state, and drops all fields that follow — including the CONSTRAINT line.
+PERIOD FOR SYSTEM_TIME (ts, te) — The parser has no knowledge of this clause at all. It treats PERIOD as an unknown column name, enters the wrong parsing state, and fails before reaching the foreign key constraint.
 
-```sql
-PERIOD FOR SYSTEM_TIME (`ts`, `te`),
-```
 
-This line appears **immediately before** the `CONSTRAINT` lines. The existing regex pattern does not account for this clause, causing it to fail to match the foreign key constraints entirely.]
+Both failures cause getForeignKeysData() to return an empty array, making phpMyAdmin act as if no foreign keys exist.
+
+I confirmed this by grepping the entire phpmyadmin/sql-parser source for any mention of PERIOD FOR SYSTEM_TIME, ROW START, or ROW END — zero results. The library was simply never updated for MariaDB system versioning, which was added in MariaDB 10.3.4 in 2018.
 
 ### Proposed Solution
 
-[**Option A — Pre-process the string (simplest)**
+Pre-process the SHOW CREATE TABLE string in getForeignKeysData() to strip the two MariaDB system versioning constructs before passing it to the parser. This only affects the string used for foreign key detection and does not change any database data or any other phpMyAdmin functionality.
 
-Strip the `PERIOD FOR SYSTEM_TIME` line before running the regex:
-
-```php
-// Remove PERIOD FOR SYSTEM_TIME clause before parsing foreign keys
-$createQuery = preg_replace(
-    '/\bPERIOD\s+FOR\s+SYSTEM_TIME\s*\([^)]*\),?\s*/i',
+php// Strip GENERATED ALWAYS AS ROW START/END columns (MariaDB system versioning)
+$showCreateTable = preg_replace(
+    '/^\s*`?\w+`?\s+\w+(?:\(\d+\))?\s+GENERATED ALWAYS AS ROW (?:START|END)[^\n]*,?\n?/im',
     '',
-    $createQuery
+    $showCreateTable
 );
-```
 
-**Option B — Update the regex to tolerate the clause**
-
-Modify the existing regex so it doesn't break when `PERIOD FOR SYSTEM_TIME` appears before a `CONSTRAINT` line. This is more surgical but requires understanding the full regex pattern first.
-
-**Recommended approach:** Option A — it is simpler, easier to review, and less likely to introduce unintended side effects.]
+// Strip PERIOD FOR SYSTEM_TIME clause (MariaDB system versioning)
+$showCreateTable = preg_replace(
+    '/^\s*PERIOD\s+FOR\s+SYSTEM_TIME\s*\([^)]*\),?\n?/im',
+    '',
+    $showCreateTable
+);
 
 ### Implementation Plan
 
 Using UMPIRE framework (adapted):
 
-**Understand:** [When a MariaDB table has system versioning enabled (using ADD SYSTEM VERSIONING), phpMyAdmin stops recognizing and displaying foreign keys on that table. The foreign keys still exist in the database and appear in SHOW CREATE TABLE, but phpMyAdmin's UI doesn't show them in "Relation View" or create clickable links in the "Browse" tab.]
+**Understand:** When MariaDB system versioning is enabled, SHOW CREATE TABLE includes constructs the SQL parser library does not know about, causing it to silently fail and return no foreign keys
 
-**Match:** [The fix follows the same pattern used elsewhere in phpMyAdmin where SHOW CREATE TABLE output is pre-processed before regex matching — strip unexpected clauses before parsing.]
+**Match:** Pre-processing the input string before parsing is the safest approach — it keeps the change contained to a single method in phpMyAdmin and avoids modifying the parser library (which would require a separate PR to a different repository).
 
 **Plan:** [Step-by-step implementation plan]
-1. Run grep -rn "FOREIGN KEY\|parseForeign" src/ --include="*.php" to locate the exact file and method
-2. Add a preg_replace call to strip PERIOD FOR SYSTEM_TIME from the string before the existing regex runs
-3. Add a unit test that passes a SHOW CREATE TABLE string containing PERIOD FOR SYSTEM_TIME to the parser and asserts the foreign key is still found
-4. Run the full test suite to confirm no regressions
+1. Locate getForeignKeysData() in src/ConfigStorage/Relation.php (line 429)
+2. Add two preg_replace calls to strip the versioning constructs before parsing
+3. Add unit tests covering the fix
+4. Run the full test suite (composer test) to confirm no regressions
    
-**Implement:** (branch link to be added)
+**Implement:** Fix applied to src/ConfigStorage/Relation.php (branch link to be added)
 
-**Review:** [Check that the change follows phpMyAdmin's coding standards, has no unrelated whitespace changes, and includes a test.]
+**Review:** Change is minimal, focused, and does not modify any parser library code. Only affects the string pre-processing step in one method.
 
-**Evaluate:** [How will you verify it works?]
-- [ ] Foreign keys are correctly shown in phpMyAdmin's Relation view for system-versioned tables
+**Evaluate:** 
+- [ ] Foreign keys shown correctly in Relation View for system-versioned tables ✅ (verified visually)
 - [ ] Foreign keys still work correctly for non-versioned tables (no regression)
 - [ ] New test case passes
 - [ ] All existing tests still pass
-- [ ] Code change is minimal and focused — no unrelated formatting or whitespace changes
-
+  
 ---
 
 ## Testing Strategy
 
 ### Unit Tests
 
-- [ ] Test case 1: [Test that foreign keys are correctly parsed when PERIOD FOR SYSTEM_TIME is present in the SHOW CREATE TABLE string]
-- [ ] Test case 2: [Test that foreign keys are still correctly parsed for non-versioned tables (no regression)]
-- [ ] Test case 3: [Test that the regex strips PERIOD FOR SYSTEM_TIME with varying whitespace formats]
+- [ ] getForeignKeysData() correctly returns foreign keys when SHOW CREATE TABLE includes PERIOD FOR SYSTEM_TIME
+- [ ] getForeignKeysData() correctly returns foreign keys when SHOW CREATE TABLE includes GENERATED ALWAYS AS ROW START/END columns
+- [ ] getForeignKeysData() still works correctly for non-versioned tables (regression check)
+- [ ] Regex handles both backtick-quoted and unquoted column names
 
 ### Integration Tests
 
-- [ ] Navigate to Relation View on a system-versioned table and confirm foreign key is shown
-- [ ] Confirm clickable FK links appear in Browse tab for system-versioned tables
+- [ ]  Relation View on a system-versioned table shows the foreign key correctly
+- [ ]  Browse tab shows clickable FK links for system-versioned tables
+- [ ]  Non-versioned tables are unaffected
+
 
 ### Manual Testing
 
-[What you tested manually and results]
-(to be completed once environment is fully set up)
+Manually reproduced and verified the fix in phpMyAdmin running locally against MariaDB 10.11 via Docker. Before the fix: the Relation View for the orders table showed an empty Foreign key constraints section. After applying the fix to src/ConfigStorage/Relation.php: the Relation View correctly displays the fk_customer constraint with customer_id → testdb.customers.id.
 ---
 
 ## Implementation Notes
 
-### Week [3] Progress
+### Week 3 Progress
 
 [This week I focused on deeply understanding the issue, setting up the local development environment, and planning the fix. I read through the GitHub issue thread, understood the role of SHOW CREATE TABLE and how phpMyAdmin parses it, and identified the root cause as the PERIOD FOR SYSTEM_TIME clause breaking the foreign key regex.
 
 I ran into significant environment setup challenges — Docker and PHP both failed to install due to macOS 13 (Ventura) compatibility issues. After multiple troubleshooting attempts including trying older Docker versions and debugging Homebrew compilation failures, I identified the OS as the root cause and upgraded to macOS Tahoe (macOS 15). Environment setup will be completed and the fix implemented once the OS upgrade finishes.
 
-Code Changes
 
 
-Files to modify: src/Table/Table.php (or equivalent — to be confirmed with grep)
-Key commits: (to be added)
-Approach decision: Chose pre-processing over regex modification because it is simpler, more readable, and less risky for reviewers to assess]
+### Week 4 Progress
 
-### Week [Y] Progress
+Completed full reproduction, root cause analysis, and fix implementation.
 
-[Continue documenting as you work]
+Reproduction: Set up phpMyAdmin locally with MariaDB 10.11 via Docker. Created a system-versioned table with a foreign key and confirmed the bug visually in the Relation View. Used SHOW CREATE TABLE via terminal to identify the exact SQL constructs causing the failure.
+
+Root cause discovery: Traced the code path from phpMyAdmin's Relation View → getForeignKeysData() in src/ConfigStorage/Relation.php → phpmyadmin/sql-parser library. Discovered that the parser library has zero knowledge of PERIOD FOR SYSTEM_TIME or GENERATED ALWAYS AS ROW START/END. Grepped the entire library source — no results for either construct. The library was never updated for MariaDB system versioning (added in 2018).
+
+Fix attempts: Initially tried fixing the parser library directly in vendor/phpmyadmin/sql-parser/src/Parsers/CreateDefinitions.php. Successfully handled PERIOD FOR SYSTEM_TIME with a skip block in the state machine. However, GENERATED ALWAYS AS ROW START/END failed at a deeper level — the AS option parser expected parentheses-delimited expressions and had no way to handle the ROW START/END tokens that follow without parentheses. Multiple attempts to patch the state machine all hit new failure points.
+
+Final fix: Switched to pre-processing the SHOW CREATE TABLE string in Relation.php before passing to the parser — two preg_replace calls strip both problematic constructs. Verified the fix end-to-end in the phpMyAdmin UI — the Relation View now correctly shows the foreign key for system-versioned tables.
+
 
 ### Code Changes
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+- **Files modified:** src/ConfigStorage/Relation.php
+- **Method modified: getForeignKeysData() (line 429)
+- **Change: Two preg_replace calls strip GENERATED ALWAYS AS ROW START/END columns and PERIOD FOR SYSTEM_TIME clause from the SHOW CREATE TABLE string before it is passed to the SQL parser
+- **Key commits:** (to be added)
+- **Approach decisions:** Pre-processing in Relation.php is cleaner than patching the parser library — it is more readable, easier to review, and keeps the change contained to the one method where the data is consumed. Fixing the parser library would require a separate issue and PR to the phpmyadmin/sql-parser repository.
 
 ---
 
@@ -309,34 +310,63 @@ Approach decision: Chose pre-processing over regex modification because it is si
 
 **PR Link:** [GitHub PR URL when submitted]
 
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+**PR Description:** 
+Fix foreign key parsing broken by MariaDB system versioning
+
+When a MariaDB table has system versioning enabled, SHOW CREATE TABLE
+includes constructs that the sql-parser library does not handle:
+
+1. GENERATED ALWAYS AS ROW START/END columns
+2. PERIOD FOR SYSTEM_TIME (...) clause
+
+These cause the parser to return no fields, making getForeignKeysData()
+return an empty array. The Relation View then appears empty for any
+system-versioned table even though the foreign keys exist.
+
+Fix: Pre-process the SHOW CREATE TABLE string in getForeignKeysData()
+to strip these MariaDB-specific constructs before passing to the parser.
+The foreign keys themselves are unaffected.
+
+Fixes: #20095
+
+Signed-off-by: Mariamawit Berta <mariamawit21geremew@gmail.com>
 
 **Maintainer Feedback:**
 - [Date]: [Summary of feedback received]
 - [Date]: [How you addressed it]
 
-**Status:** [Awaiting review / Iterating / Approved / Merged]
-
+**Status:** Awaiting review 
 ---
 
 ## Learnings & Reflections
 
 ### Technical Skills Gained
 
-[What you learned technically]
-
+- Learned how phpMyAdmin reads and parses SHOW CREATE TABLE output using the phpmyadmin/sql-parser library
+- Deepened understanding of MariaDB system versioning — what it does, when it was introduced (MariaDB 10.3.4, 2018), and how it changes table DDL output
+- Learned to trace a bug through multiple layers: UI → controller → service method → third-party library
+- Learned how to read and understand a state machine parser in PHP
+- Practiced writing and debugging PHP regex patterns for SQL string pre-processing
+- Learned how open source PHP projects use Composer, Yarn, and webpack together
+- Learned phpMyAdmin's contribution requirements: Signed-off-by tags, test requirements, and branch targeting
+  
 ### Challenges Overcome
 
-[What was hard and how you solved it]
+The biggest technical challenge was discovering that the bug was deeper than expected. I initially assumed a simple regex fix in one file, but tracing the code revealed the issue was in a third-party parser library that had no knowledge of MariaDB system versioning. I attempted to fix the parser's state machine directly and hit multiple failure points — each fix exposed a new problem in a deeper layer of the parser. The pre-processing approach in Relation.php was ultimately the cleaner and more maintainable solution.
+
+The environment setup was also unexpectedly difficult — what should have been a 30-minute setup took several sessions due to macOS version incompatibilities and a full disk.
 
 ### What I'd Do Differently Next Time
 
-[Reflection on your process]
+I would grep the dependency library for the relevant keywords before writing any code — knowing that phpmyadmin/sql-parser had zero knowledge of PERIOD FOR SYSTEM_TIME upfront would have pointed me to the pre-processing approach immediately. I also learned that checking system requirements for all tools before starting setup would save significant time.
 
 ---
 
 ## Resources Used
 
-- [Link to helpful documentation]
-- [Tutorial or Stack Overflow post that helped]
-- [GitHub issues or discussions that helped]
+- phpMyAdmin GitHub Issue #20095 (https://github.com/phpmyadmin/phpmyadmin/issues/20095)
+- MariaDB System Versioning documentation (https://mariadb.com/kb/en/system-versioned-tables/)
+- phpMyAdmin CONTRIBUTING.md (https://github.com/phpmyadmin/phpmyadmin/blob/master/CONTRIBUTING.md)
+- phpmyadmin/sql-parser repository (https://github.com/phpmyadmin/sql-parser)
+- Homebrew Support Tiers (https://docs.brew.sh/Support-Tiers)
+
