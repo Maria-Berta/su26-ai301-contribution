@@ -298,14 +298,13 @@ Fix attempts: Initially tried fixing the parser library directly in vendor/phpmy
 
 Final fix: Switched to pre-processing the SHOW CREATE TABLE string in Relation.php before passing to the parser — two preg_replace calls strip both problematic constructs. Verified the fix end-to-end in the phpMyAdmin UI — the Relation View now correctly shows the foreign key for system-versioned tables.
 
-
 ### Code Changes
 
-- **Files modified:** src/ConfigStorage/Relation.php
-- **Method modified: getForeignKeysData() (line 429)
+- **File modified:** `src/ConfigStorage/Relation.php`
+- **Branch:** [fix/system-versioning-foreign-keys](https://github.com/Maria-Berta/phpmyadmin/tree/fix/system-versioning-foreign-keys)
+- **Key commit:** [Fix foreign key parsing broken by MariaDB system versioning](https://github.com/Maria-Berta/phpmyadmin/commit/2aac8520cc)
 - **Change: Two preg_replace calls strip GENERATED ALWAYS AS ROW START/END columns and PERIOD FOR SYSTEM_TIME clause from the SHOW CREATE TABLE string before it is passed to the SQL parser
-- **Key commits:** (to be added)
-- **Approach decisions:** Pre-processing in Relation.php is cleaner than patching the parser library — it is more readable, easier to review, and keeps the change contained to the one method where the data is consumed. Fixing the parser library would require a separate issue and PR to the phpmyadmin/sql-parser repository.
+- **Approach decision:** Pre-processing in `Relation.php` is cleaner than patching the parser library — it is more readable, easier to review, and keeps the change contained to the one method where the data is consumed.
 
 ---
 
