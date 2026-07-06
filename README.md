@@ -375,18 +375,18 @@ I would grep the dependency library for the relevant keywords before writing any
 - [phpmyadmin/sql-parser repository](https://github.com/phpmyadmin/sql-parser)
 - [Homebrew Support Tiers](https://docs.brew.sh/Support-Tiers)
 
-Contribution #2: ComplexCopier missing support for FixedSizeBinary columns — #559
+# Contribution #2: ComplexCopier missing support for FixedSizeBinary columns — #559
 
-Contribution Number: 2
+**Contribution Number:** 2
 
-Student: Mariamawit Berta
+**Student:** Mariamawit Berta
 
-Issue: GitHub Issue #559
+**Issue:** GitHub Issue #559
 
-Status: Phase I In Progress
+**Status:** Phase I In Progress
 
 
-Why I Chose This Issue
+## Why I Chose This Issue
 
 I chose this issue because it sits at the intersection of Java — my strongest language — and Apache Arrow, one of the most impactful data engineering projects in the open source world. Apache Arrow is used widely in data pipelines and analytics tools, which connects directly to my background in data analysis (USPS 2.5B+ record pipeline project) and my AI Fellow experience building predictive models.
 
@@ -395,9 +395,9 @@ The bug is a clear, well-scoped Java issue — a missing type case causing an Un
 Additionally, having an Apache Arrow contribution on my resume is a strong signal — Arrow is used at companies like Databricks, Pandas, and Snowflake, all of which align with the data engineering career path I'm building.
 
 
-Understanding the Issue
+## Understanding the Issue
 
-Problem Description
+### Problem Description
 
 ComplexCopier in Apache Arrow Java does not support copying FixedSizeBinary columns. When a user tries to copy a ListVector that contains a FixedSizeBinary field, it throws:
 
@@ -407,22 +407,22 @@ java.lang.UnsupportedOperationException: FIXEDSIZEBINARY
     at org.apache.arrow.vector.complex.impl.ComplexCopier.copy(ComplexCopier.java:76)
     at org.apache.arrow.vector.complex.ListVector.copyFrom(ListVector.java:409)
 
-Expected Behavior
+### Expected Behavior
 
 ComplexCopier should support all Arrow types including FixedSizeBinary, just like it supports other binary and variable-width types. Copying a ListVector containing FixedSizeBinary fields should work without throwing an exception.
 
-Current Behavior
+### Current Behavior
 
 Any attempt to copy a vector containing FixedSizeBinary fields using ComplexCopier throws UnsupportedOperationException: FIXEDSIZEBINARY.
 
-Affected Components
+### Affected Components
 
 The issue is in ComplexCopier.java in the getListWriterForReader() method, which uses a switch/case over Arrow types to return the appropriate writer. FIXEDSIZEBINARY is simply missing from the switch — the default case throws the UnsupportedOperationException.
 
 
-Solution Approach (Initial Analysis)
+## Solution Approach (Initial Analysis)
 
-Root Cause Hypothesis
+### Root Cause Hypothesis
 
 getListWriterForReader() in ComplexCopier.java has a switch statement that maps Arrow MinorType values to their corresponding writer. FIXEDSIZEBINARY is not listed as a case, so it falls through to the default case which throws UnsupportedOperationException.
 
@@ -434,33 +434,33 @@ Similarly checking writeValue() (line 93) and any other methods in ComplexCopier
 Adding a unit test that copies a ListVector containing FixedSizeBinary fields and asserts it completes without error
 
 
-Implementation Plan
+### Implementation Plan
 
 Using the UMPIRE framework:
 
-Understand: ComplexCopier doesn't have a case for FIXEDSIZEBINARY in its type switch, causing all copy operations on vectors containing that type to fail with an exception.
+**Understand:** ComplexCopier doesn't have a case for FIXEDSIZEBINARY in its type switch, causing all copy operations on vectors containing that type to fail with an exception.
 
-Match: The fix follows the same pattern as all other type cases already in the switch — find how VARBINARY or FIXEDWIDTHTYPE cases are implemented and replicate that pattern for FIXEDSIZEBINARY.
+**Match:** The fix follows the same pattern as all other type cases already in the switch — find how VARBINARY or FIXEDWIDTHTYPE cases are implemented and replicate that pattern for FIXEDSIZEBINARY.
 
-Plan:
-
-
-Clone apache/arrow-java and build locally with Maven
-Read ComplexCopier.java and locate all switch statements involving MinorType
-Find existing FixedSizeBinaryWriter usage elsewhere in the codebase for reference
-Add FIXEDSIZEBINARY case to getListWriterForReader() and any other missing locations
-Find the existing ComplexCopierTest.java and model a new test on it
-Run mvn test to confirm fix and no regressions
+**Plan:**
 
 
-Implement: (branch link to be added)
+1. Clone apache/arrow-java and build locally with Maven
+2. Read ComplexCopier.java and locate all switch statements involving MinorType
+3. Find existing FixedSizeBinaryWriter usage elsewhere in the codebase for reference
+4. Add FIXEDSIZEBINARY case to getListWriterForReader() and any other missing locations
+5. Find the existing ComplexCopierTest.java and model a new test on it
+6. Run mvn test to confirm fix and no regressions
 
-Review: Follow Apache Arrow Java contribution guidelines — code style, license headers, test coverage
 
-Evaluate: New test passes, no existing tests broken, UnsupportedOperationException no longer thrown for FixedSizeBinary vectors
+**Implement:** (branch link to be added)
+
+**Review:** Follow Apache Arrow Java contribution guidelines — code style, license headers, test coverage
+
+**Evaluate:** New test passes, no existing tests broken, UnsupportedOperationException no longer thrown for FixedSizeBinary vectors
 
 
-Week 5 Progress
+### Week 5 Progress
 
 This week I focused on issue selection — evaluating multiple open source projects and issues against criteria including maintainer responsiveness, skill match, scope, and resume value. I identified Apache Arrow Java #559 as the best fit: pure Java, Apache brand, active contributor community, open since January 2025 with no one currently working on it, and directly connected to my data engineering background.
 
@@ -469,14 +469,14 @@ I commented on the issue to express interest and ask for guidance on the correct
 Key decisions made:
 
 
-Chose Apache Arrow Java over phpMyAdmin (second issue) due to maintainer responsiveness concerns — phpMyAdmin PR #20346 has received no review despite being submitted and followed up on
-Chose Apache Arrow over other candidates (Apache Burr, Angular, k-NN) because Java is my strongest language and Arrow's data engineering focus aligns most closely with my experience
+1. Chose Apache Arrow Java over phpMyAdmin (second issue) due to maintainer responsiveness concerns — phpMyAdmin PR #20346 has received no review despite being submitted and followed up on
+2. Chose Apache Arrow over other candidates (Apache Burr, Angular, k-NN) because Java is my strongest language and Arrow's data engineering focus aligns most closely with my experience
 
 
 
-Resources Used
+## Resources Used
 
 
-Apache Arrow Java GitHub Issue #559
-Apache Arrow Contributor Guide
-Apache Arrow Java Repository
+- [Apache Arrow Java GitHub Issue #559](https://github.com/apache/arrow-java/issues/559)
+- [Apache Arrow Contributor Guide](https://arrow.apache.org/docs/developers/guide/index.html)
+- [Apache Arrow Java Repository](https://github.com/apache/arrow-java)
