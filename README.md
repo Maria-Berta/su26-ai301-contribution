@@ -1,4 +1,4 @@
-# Contribution [#]: [[Bug]: Adding system versioning to a table makes foreign keys unusable
+# Contribution [#1]: [[Bug]: Adding system versioning to a table makes foreign keys unusable
  #20095]
 
 **Contribution Number:** 1
@@ -375,16 +375,19 @@ I would grep the dependency library for the relevant keywords before writing any
 - [phpmyadmin/sql-parser repository](https://github.com/phpmyadmin/sql-parser)
 - [Homebrew Support Tiers](https://docs.brew.sh/Support-Tiers)
 
-# Contribution #2: ComplexCopier missing support for FixedSizeBinary columns — #559
+  
+
+# Contribution [#2]: [ComplexCopier missing support for FixedSizeBinary columns — #559]
 
 **Contribution Number:** 2
 
 **Student:** Mariamawit Berta
 
-**Issue:** GitHub Issue #559
+**Issue:** [GitHub Issue #559](https://github.com/apache/arrow-java/issues/559)
 
 **Status:** Phase I In Progress
 
+---
 
 ## Why I Chose This Issue
 
@@ -393,6 +396,8 @@ I chose this issue because it sits at the intersection of Java — my strongest 
 The bug is a clear, well-scoped Java issue — a missing type case causing an UnsupportedOperationException — which is exactly the kind of contained, reproducible problem I've learned to look for after my phpMyAdmin contribution experience. I also specifically wanted a project with active, responsive maintainers after experiencing slow response times on my first contribution. Apache Arrow has a large, active contributor community with regular releases and a welcoming contributor guide.
 
 Additionally, having an Apache Arrow contribution on my resume is a strong signal — Arrow is used at companies like Databricks, Pandas, and Snowflake, all of which align with the data engineering career path I'm building.
+
+---
 
 
 ## Understanding the Issue
@@ -418,6 +423,8 @@ Any attempt to copy a vector containing FixedSizeBinary fields using ComplexCopi
 ### Affected Components
 
 The issue is in ComplexCopier.java in the getListWriterForReader() method, which uses a switch/case over Arrow types to return the appropriate writer. FIXEDSIZEBINARY is simply missing from the switch — the default case throws the UnsupportedOperationException.
+
+---
 
 
 ## Solution Approach (Initial Analysis)
