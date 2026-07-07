@@ -7,7 +7,7 @@
 
 **Issue:** [GitHub Issue #20095](https://github.com/phpmyadmin/phpmyadmin/issues/20095)
 
-**Status:** Phase IV Complete
+**Status:** Phase IV Complete — PR Updated Per Maintainer Feedback
 
 ---
 
@@ -337,10 +337,16 @@ Signed-off-by: Mariamawit Berta <mariamawit21geremew@gmail.com>
 Fixed a bug where phpMyAdmin's Relation View showed no foreign keys for MariaDB tables with system versioning enabled. The root cause was that `SHOW CREATE TABLE` output for system-versioned tables includes two constructs — `GENERATED ALWAYS AS ROW START/END` columns and a `PERIOD FOR SYSTEM_TIME` clause — that the `phpmyadmin/sql-parser` library does not handle. The fix pre-processes the SQL string in `getForeignKeysData()` to strip these constructs before parsing, allowing foreign keys to be correctly detected and displayed.
 
 **Maintainer Feedback:**
-- [Date]: [Summary of feedback received]
-- [Date]: [How you addressed it]
+- **July 7, 2026:** Maintainer requested hard reset to `QA_5_2` branch, cherry-pick of fix, and addition of PHPUnit tests
+- **July 7, 2026:** Completed all requested changes — rebased to `QA_5_2`, added 4 PHPUnit tests, all CI checks passing, no merge conflicts
 
-**Status:** Awaiting review 
+**Code Changes (updated):**
+- **File modified:** `libraries/classes/ConfigStorage/Relation.php` (QA_5_2 path)
+- **Test file updated:** `test/classes/ConfigStorage/RelationTest.php` — 4 new tests added
+- **Branch:** [fix/system-versioning-foreign-keys](https://github.com/Maria-Berta/phpmyadmin/tree/fix/system-versioning-foreign-keys)
+- **Key commit:** [Fix foreign key parsing broken by MariaDB system versioning](https://github.com/Maria-Berta/phpmyadmin/commit/86bd09b9e1)
+
+**Status:** Awaiting review after maintainer-requested changes
 ---
 
 ## Learnings & Reflections
@@ -354,6 +360,7 @@ Fixed a bug where phpMyAdmin's Relation View showed no foreign keys for MariaDB 
 - Practiced writing and debugging PHP regex patterns for SQL string pre-processing
 - Learned how open source PHP projects use Composer, Yarn, and webpack together
 - Learned phpMyAdmin's contribution requirements: Signed-off-by tags, test requirements, and branch targeting
+- Learned how to respond to maintainer feedback — rebasing onto a stable branch (`QA_5_2`), writing PHPUnit tests, and iterating on a PR until CI passes and conflicts are resolved
   
 ### Challenges Overcome
 
