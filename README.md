@@ -435,8 +435,6 @@ I would grep the dependency library for the relevant keywords before writing any
 
 ## Why I Chose This Issue
 
-## Why I Chose This Issue
-
 I chose this issue because it sits at the intersection of Java — my strongestlanguage — and Apache Arrow, one of the most impactful data engineering projects in the open source world. Arrow is used widely in data pipelines and analytics tools, which connects directly to my background in data analysisand my AI Fellow experience building predictive models.
 
 The bug itself is a clear, well-scoped Java issue — a missing type case causing an `UnsupportedOperationException` — exactly the kind of contained, reproducible problem that's realistic to take on and finish.
