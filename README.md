@@ -178,7 +178,7 @@ SHOW CREATE TABLE orders;
 Notice the output includes `PERIOD FOR SYSTEM_TIME (`ts`, `te`),` appearing before the `CONSTRAINT` line — this is what breaks phpMyAdmin's parser.
 
 
-### Reproduction Evidence (Will be adding on this)
+### Reproduction Evidence 
 
 - Bug: Relation View shows empty Foreign key constraints section despite the foreign key existing in the database
   <img width="1440" height="900" alt="Screenshot 2026-06-26 at 2 31 03 PM" src="https://github.com/user-attachments/assets/60a704a4-5d65-4a7b-a5fd-b61a78b30662" />
@@ -392,7 +392,7 @@ I would grep the dependency library for the relevant keywords before writing any
 
 **Issue:** [GitHub Issue #559](https://github.com/apache/arrow-java/issues/559)
 
-**Status:** Phase I In Progress
+**Status:** Phase II Complete.
 
 ---
 
@@ -432,6 +432,93 @@ Any attempt to copy a vector containing FixedSizeBinary fields using ComplexCopi
 The issue is in ComplexCopier.java in the getListWriterForReader() method, which uses a switch/case over Arrow types to return the appropriate writer. FIXEDSIZEBINARY is simply missing from the switch — the default case throws the UnsupportedOperationException.
 
 ---
+
+## Reproduction Process
+
+### Steps to reproduce:
+
+1. Clone `apache/arrow-java` and build the `vector` module:
+```bash
+   git clone https://github.com/apache/arrow-java.git
+   cd arrow-java
+   mvn -pl vector -am install -DskipTests
+```
+
+2. Open `vector/src/test/java/org/apache/arrow/vector/complex/impl/TestComplexCopier.java`
+   and add the following test method inside the `TestComplexCopier` class:
+
+```java
+   @Test
+   public void testCopyListOfFixedSizeBinary() {
+     final int byteWidth = 4;
+     try (ListVector from = ListVector.empty("v", allocator);
+         ListVector to = ListVector.empty("v", allocator);
+         ArrowBuf buf = allocator.buffer(byteWidth)) {
+
+       from.addOrGetVector(FieldType.nullable(new ArrowType.FixedSizeBinary(byteWidth)));
+
+       UnionListWriter listWriter = from.getWriter();
+       listWriter.allocate();
+
+       FixedSizeBinaryHolder holder = new FixedSizeBinaryHolder();
+       holder.byteWidth = byteWidth;
+       holder.buffer = buf;
+
+       for (int i = 0; i < COUNT; i++) {
+         listWriter.setPosition(i);
+         listWriter.startList();
+
+         buf.setBytes(0, new byte[] {1, 2, 3, 4});
+         listWriter.fixedSizeBinary().write(holder);
+
+         buf.setBytes(0, new byte[] {5, 6, 7, 8});
+         listWriter.fixedSizeBinary().write(holder);
+
+         listWriter.endList();
+       }
+       from.setValueCount(COUNT);
+
+       FieldReader in = from.getReader();
+       FieldWriter out = to.getWriter();
+       UnsupportedOperationException e =
+           assertThrows(
+               UnsupportedOperationException.class,
+               () -> {
+                 for (int i = 0; i < COUNT; i++) {
+                   in.setPosition(i);
+                   out.setPosition(i);
+                   ComplexCopier.copy(in, out);
+                 }
+               });
+       assertTrue(e.getMessage().contains("FIXEDSIZEBINARY"));
+     }
+   }
+```
+
+3. Run the test:
+```bash
+   mvn -pl vector test -Dtest=TestComplexCopier#testCopyListOfFixedSizeBinary
+```
+
+4. Confirm the bug: the test passes, because it explicitly asserts that
+   `ComplexCopier.copy()` throws `UnsupportedOperationException` containing
+   `"FIXEDSIZEBINARY"` — a green result here confirms the bug is present, not
+   that it's fixed.Expected output:
+[INFO] Running org.apache.arrow.vector.complex.impl.TestComplexCopier
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.385 s -- in org.apache.arrow.vector.complex.impl.TestComplexCopier
+[INFO] Results:
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+The root cause is in `getListWriterForReader()` in
+   `vector/src/main/codegen/templates/ComplexCopier.java` — its `switch`
+   statement over `MinorType` values doesn't include a case for
+   `FIXEDSIZEBINARY`, so it falls through to the `default` branch and throws.
+   This matches [issue #559](https://github.com/apache/arrow-java/issues/559).
+
+   
+### Reproduction Evidence 
+[GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary)
 
 
 ## Solution Approach (Initial Analysis)
