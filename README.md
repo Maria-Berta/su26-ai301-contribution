@@ -274,6 +274,7 @@ Using UMPIRE framework (adapted):
 ### Manual Testing
 
 Manually reproduced and verified the fix in phpMyAdmin running locally against MariaDB 10.11 via Docker. Before the fix: the Relation View for the orders table showed an empty Foreign key constraints section. After applying the fix to src/ConfigStorage/Relation.php: the Relation View correctly displays the fk_customer constraint with customer_id → testdb.customers.id.
+
 ---
 
 ## Implementation Notes
@@ -303,7 +304,7 @@ Final fix: Switched to pre-processing the SHOW CREATE TABLE string in Relation.p
 This week I received my first maintainer feedback on PR #20346 and completed all requested changes.
 
 **Maintainer feedback received:**
-The maintainer (`hoanghuy309`) responded asking me to:
+The maintainer responded asking me to:
 1. Hard reset the branch to `QA_5_2` (phpMyAdmin's stable release branch) instead of `master`
 2. Cherry-pick the fix onto the new base
 3. Add PHPUnit tests
