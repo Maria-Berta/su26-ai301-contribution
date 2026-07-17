@@ -347,6 +347,7 @@ Fixed a bug where phpMyAdmin's Relation View showed no foreign keys for MariaDB 
 - **Key commit:** [Fix foreign key parsing broken by MariaDB system versioning](https://github.com/Maria-Berta/phpmyadmin/commit/86bd09b9e1)
 
 **Status:** Awaiting review after maintainer-requested changes
+
 ---
 
 ## Learnings & Reflections
@@ -407,6 +408,7 @@ The bug itself is a clear, well-scoped Java issue — a missing type case causin
 Another major factor in choosing this project was maintainer responsiveness. Apache Arrow has a large, active contributor community with frequent releases, a clear contributor guide, and a track record of maintainers engaging with incoming issues and PRs in reasonable time — something I specifically prioritized this round, since a contribution only builds real skill and momentum if it moves forward with feedback along the way, rather than stalling in silence.
 
 Additionally, having an Apache Arrow contribution on my resume is a strong signal — Arrow is used at companies like Databricks, Pandas, and Snowflake, all of which align with the data engineering career path I'm building.
+
 ---
 
 
@@ -574,11 +576,15 @@ This week I focused on issue selection — evaluating multiple open source proje
 
 I commented on the issue to express interest and ask for guidance on the correct approach and relevant test files. Awaiting maintainer confirmation before beginning implementation.
 
-Key decisions made:
+### Week 7 Progress
 
+This week I completed Phase II: reproducing the bug and drafting an implementation plan.
 
-1. Chose Apache Arrow Java over phpMyAdmin (second issue) due to maintainer responsiveness concerns — phpMyAdmin PR #20346 has received no review despite being submitted and followed up on
-2. Chose Apache Arrow over other candidates (Apache Burr, Angular, k-NN) because Java is my strongest language and Arrow's data engineering focus aligns most closely with my experience
+I forked `apache/arrow-java`, set up the environment locally, and created a branch off the latest `main`: `GH-559-complex-copier-fixed-size-binary`. To reproduce the bug, I added a test method to the existing `TestComplexCopier.java` that builds a `ListVector` with a `FixedSizeBinary` child, then asserts that `ComplexCopier.copy()` throws `UnsupportedOperationException` containing `"FIXEDSIZEBINARY"`. The test passes, confirming the root cause: `getListWriterForReader()` in `vector/src/main/codegen/templates/ComplexCopier.java` is missing a `FIXEDSIZEBINARY` case in its `MinorType` switch. I pushed the branch as reproduction evidence.
+
+Using the UMPIRE framework, I drafted an implementation plan: locate every switch statement in `ComplexCopier.java` missing this case, model the fix on how neighboring binary types (e.g. `VARBINARY`) are handled, extend my reproduction test into a passing test post-fix, and confirm no regressions.
+
+One hiccup along the way: I hit a deprecated API (`writeFixedSizeBinary(byte[])`) and had to switch to the `FixedSizeBinaryHolder`-based `write()` method instead — a good reminder to check for deprecation notices before assuming the obvious method signature is the right one.
 
 
 
