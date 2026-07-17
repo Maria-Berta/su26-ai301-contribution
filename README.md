@@ -298,6 +298,41 @@ Fix attempts: Initially tried fixing the parser library directly in vendor/phpmy
 
 Final fix: Switched to pre-processing the SHOW CREATE TABLE string in Relation.php before passing to the parser — two preg_replace calls strip both problematic constructs. Verified the fix end-to-end in the phpMyAdmin UI — the Relation View now correctly shows the foreign key for system-versioned tables.
 
+### Week 6 Progress
+
+This week I received my first maintainer feedback on PR #20346 and completed all requested changes.
+
+**Maintainer feedback received:**
+The maintainer (`hoanghuy309`) responded asking me to:
+1. Hard reset the branch to `QA_5_2` (phpMyAdmin's stable release branch) instead of `master`
+2. Cherry-pick the fix onto the new base
+3. Add PHPUnit tests
+
+**Changes made in response:**
+
+*Rebasing to QA_5_2:*
+The rebase revealed that `Relation.php` lives at a different path in `QA_5_2` — `libraries/classes/ConfigStorage/Relation.php` instead of `src/ConfigStorage/Relation.php`. This is because `QA_5_2` uses the older `libraries/` directory structure while `master` uses the newer `src/` layout. I applied the same pre-processing fix to the correct file path.
+
+*PHPUnit tests added:*
+Added 4 new test methods to `test/classes/ConfigStorage/RelationTest.php`:
+- `testGetForeignersWithSystemVersionedTable` — full integration test with both `PERIOD FOR SYSTEM_TIME` and `GENERATED ALWAYS AS ROW START/END` present, asserts foreign key is correctly found
+- `testStripPeriodForSystemTime` — asserts the `PERIOD FOR SYSTEM_TIME` clause is stripped from the SQL string
+- `testStripGeneratedAlwaysAsRowStartEnd` — asserts `ROW START` and `ROW END` columns are stripped
+- `testGetForeignersWithNonVersionedTable` — regression test confirming non-versioned tables are completely unaffected
+
+*Debugging the tests:*
+The tests required several iterations to get right. I encountered three issues:
+- `composer dump-autoload` was needed to register the test namespace before PHPUnit could find `AbstractTestCase`
+- The correct method call in QA_5_2 is `$stmt->getForeignKeys()` not `Table::getForeignKeys($stmt)` — the sql-parser library API differs between branches
+- The SQL test strings needed explicit `\n` newline characters for the multiline regex `^` anchor to work correctly
+
+All 4 tests pass locally. Force-pushed the updated branch and changed the PR base from `master` to `QA_5_2`.
+
+**CI investigation:**
+The CI showed failures on "Run tests" and "End-to-End tests" after the push. After investigating the `QA_5_2` branch action history, I confirmed these failures are pre-existing — multiple other recently merged PRs (#20339, #20343) show the same failures on the same jobs before my changes. I left a comment on the PR noting this for the maintainer.
+
+**Current PR status:** Awaiting review — all requested changes completed, CI checks that can pass are passing, no merge conflicts
+
 ### Code Changes
 
 - **File modified:** `src/ConfigStorage/Relation.php`
