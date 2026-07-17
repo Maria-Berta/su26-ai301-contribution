@@ -554,7 +554,7 @@ Using the UMPIRE framework:
 6. Run mvn test to confirm fix and no regressions
 
 
-**Implement:** (branch link to be added)
+**Implement:** [GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary)(implementation to be added)
 
 **Review:** Follow Apache Arrow Java contribution guidelines — code style, license headers, test coverage
 
