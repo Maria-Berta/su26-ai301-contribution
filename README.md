@@ -520,6 +520,10 @@ The root cause is in `getListWriterForReader()` in
 ### Reproduction Evidence 
 [GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary)
 
+<img width="1440" height="900" alt="Screenshot 2026-07-17 at 3 27 56 PM" src="https://github.com/user-attachments/assets/3476d156-594a-436a-abef-032924c5b1de" />
+
+Reproduction confirmed via automated test testCopyListOfFixedSizeBinary, which asserts that ComplexCopier.copy() throws UnsupportedOperationException: FIXEDSIZEBINARY when copying a ListVector of FixedSizeBinary values — test passes, confirming the exception is thrown as expected.
+
 
 ## Solution Approach (Initial Analysis)
 
