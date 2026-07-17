@@ -398,12 +398,15 @@ I would grep the dependency library for the relevant keywords before writing any
 
 ## Why I Chose This Issue
 
-I chose this issue because it sits at the intersection of Java — my strongest language — and Apache Arrow, one of the most impactful data engineering projects in the open source world. Apache Arrow is used widely in data pipelines and analytics tools, which connects directly to my background in data analysis (USPS 2.5B+ record pipeline project) and my AI Fellow experience building predictive models.
+## Why I Chose This Issue
 
-The bug is a clear, well-scoped Java issue — a missing type case causing an UnsupportedOperationException — which is exactly the kind of contained, reproducible problem I've learned to look for after my phpMyAdmin contribution experience. I also specifically wanted a project with active, responsive maintainers after experiencing slow response times on my first contribution. Apache Arrow has a large, active contributor community with regular releases and a welcoming contributor guide.
+I chose this issue because it sits at the intersection of Java — my strongestlanguage — and Apache Arrow, one of the most impactful data engineering projects in the open source world. Arrow is used widely in data pipelines and analytics tools, which connects directly to my background in data analysisand my AI Fellow experience building predictive models.
+
+The bug itself is a clear, well-scoped Java issue — a missing type case causing an `UnsupportedOperationException` — exactly the kind of contained, reproducible problem that's realistic to take on and finish.
+
+Another major factor in choosing this project was maintainer responsiveness. Apache Arrow has a large, active contributor community with frequent releases, a clear contributor guide, and a track record of maintainers engaging with incoming issues and PRs in reasonable time — something I specifically prioritized this round, since a contribution only builds real skill and momentum if it moves forward with feedback along the way, rather than stalling in silence.
 
 Additionally, having an Apache Arrow contribution on my resume is a strong signal — Arrow is used at companies like Databricks, Pandas, and Snowflake, all of which align with the data engineering career path I'm building.
-
 ---
 
 
