@@ -473,7 +473,11 @@ The issue is in ComplexCopier.java in the getListWriterForReader() method, which
 
 ### Environment Setup
 
-[Notes on setting up your local development environment - challenges you faced, how you solved them]
+Setting up `arrow-java` was straightforward compared to my first contribution — it's a standard multi-module Maven project, so no additional tooling like Node or Docker was required. Prerequisites were JDK 11+ and Maven 3.6+, both of which I already had installed.
+
+After forking and cloning the repository, I built just the `vector` module (where the bug lives) rather than the entire project, using `mvn -pl vector -am install -DskipTests`, which builds the module plus its dependencies without running the full test suite — much faster for an initial sanity check that the environment was working.
+
+One important discovery during setup: `ComplexCopier.java` is not a plain, checked-in Java file — it's a FreeMarker template located at `vector/src/main/codegen/templates/ComplexCopier.java`, which Maven processes during the build to generate the real class under `target/generated-sources/`. I confirmed this by running `mvn -pl vector generate-sources` and inspecting the generated output directly, since editing the wrong copy of the file would mean any fix silently disappears on the next build. Catching this early meant I knew exactly which file to modify going forward, rather than discovering it after writing a fix that never took effect.
 
 ### Steps to reproduce:
 
@@ -567,9 +571,9 @@ The root cause is in `getListWriterForReader()` in
 
 ---
 
-## Solution Approach (Initial Analysis)
+## Solution Approach 
 
-### Root Cause Hypothesis
+### Analysis
 
 getListWriterForReader() in ComplexCopier.java has a switch statement that maps Arrow MinorType values to their corresponding writer. FIXEDSIZEBINARY is not listed as a case, so it falls through to the default case which throws UnsupportedOperationException.
 
