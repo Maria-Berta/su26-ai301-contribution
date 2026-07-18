@@ -180,19 +180,16 @@ Notice the output includes `PERIOD FOR SYSTEM_TIME (`ts`, `te`),` appearing befo
 
 ### Reproduction Evidence 
 
+**Commit showing reproduction:**
+
 - Bug: Relation View shows empty Foreign key constraints section despite the foreign key existing in the database
   <img width="1440" height="900" alt="Screenshot 2026-06-26 at 2 31 03 PM" src="https://github.com/user-attachments/assets/60a704a4-5d65-4a7b-a5fd-b61a78b30662" />
 
-- Root cause confirmed: SHOW CREATE TABLE terminal output shows PERIOD FOR SYSTEM_TIME and GENERATED ALWAYS AS ROW START/END present before the CONSTRAINT line
- 
-- Fix verified: After applying the fix, Relation View correctly shows fk_customer with customer_id → testdb.customers.id (screenshot)
-
-<img width="1435" height="777" alt="Screenshot 2026-06-28 at 2 49 03 PM" src="https://github.com/user-attachments/assets/b7d7ef94-1f31-4ead-80ac-92479d4eea3c" />
+**Screenshots/logs:** <img width="1435" height="777" alt="Screenshot 2026-06-28 at 2 49 03 PM" src="https://github.com/user-attachments/assets/b7d7ef94-1f31-4ead-80ac-92479d4eea3c" />
 <img width="1440" height="900" alt="Screenshot 2026-06-28 at 3 18 30 PM" src="https://github.com/user-attachments/assets/de2eb724-39f1-462f-94f7-215112965254" />
 <img width="1440" height="900" alt="Screenshot 2026-06-28 at 3 28 24 PM" src="https://github.com/user-attachments/assets/7f7a2d11-1a69-484d-92de-2bb760350e00" />
 
-
-
+**My findings:** Root cause confirmed: SHOW CREATE TABLE terminal output shows PERIOD FOR SYSTEM_TIME and GENERATED ALWAYS AS ROW START/END present before the CONSTRAINT line. After applying the fix, Relation View correctly shows fk_customer with customer_id → testdb.customers.id
 
 ---
 
@@ -286,7 +283,6 @@ Manually reproduced and verified the fix in phpMyAdmin running locally against M
 I ran into significant environment setup challenges — Docker and PHP both failed to install due to macOS 13 (Ventura) compatibility issues. After multiple troubleshooting attempts including trying older Docker versions and debugging Homebrew compilation failures, I identified the OS as the root cause and upgraded to macOS Tahoe (macOS 15). Environment setup will be completed and the fix implemented once the OS upgrade finishes.
 
 
-
 ### Week 4 Progress
 
 Completed full reproduction, root cause analysis, and fix implementation.
@@ -298,6 +294,7 @@ Root cause discovery: Traced the code path from phpMyAdmin's Relation View → g
 Fix attempts: Initially tried fixing the parser library directly in vendor/phpmyadmin/sql-parser/src/Parsers/CreateDefinitions.php. Successfully handled PERIOD FOR SYSTEM_TIME with a skip block in the state machine. However, GENERATED ALWAYS AS ROW START/END failed at a deeper level — the AS option parser expected parentheses-delimited expressions and had no way to handle the ROW START/END tokens that follow without parentheses. Multiple attempts to patch the state machine all hit new failure points.
 
 Final fix: Switched to pre-processing the SHOW CREATE TABLE string in Relation.php before passing to the parser — two preg_replace calls strip both problematic constructs. Verified the fix end-to-end in the phpMyAdmin UI — the Relation View now correctly shows the foreign key for system-versioned tables.
+
 
 ### Week 6 Progress
 
@@ -474,6 +471,10 @@ The issue is in ComplexCopier.java in the getListWriterForReader() method, which
 
 ## Reproduction Process
 
+### Environment Setup
+
+[Notes on setting up your local development environment - challenges you faced, how you solved them]
+
 ### Steps to reproduce:
 
 1. Clone `apache/arrow-java` and build the `vector` module:
@@ -557,12 +558,14 @@ The root cause is in `getListWriterForReader()` in
 
    
 ### Reproduction Evidence 
-[GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary)
 
-<img width="1440" height="900" alt="Screenshot 2026-07-17 at 3 27 56 PM" src="https://github.com/user-attachments/assets/3476d156-594a-436a-abef-032924c5b1de" />
+**Commit showing reproduction:** [GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary)
 
-Reproduction confirmed via automated test testCopyListOfFixedSizeBinary, which asserts that ComplexCopier.copy() throws UnsupportedOperationException: FIXEDSIZEBINARY when copying a ListVector of FixedSizeBinary values — test passes, confirming the exception is thrown as expected.
+**Screenshots/logs:** <img width="1440" height="900" alt="Screenshot 2026-07-17 at 3 27 56 PM" src="https://github.com/user-attachments/assets/3476d156-594a-436a-abef-032924c5b1de" />
 
+**My findings:** Reproduction confirmed via automated test testCopyListOfFixedSizeBinary, which asserts that ComplexCopier.copy() throws UnsupportedOperationException: FIXEDSIZEBINARY when copying a ListVector of FixedSizeBinary values — test passes, confirming the exception is thrown as expected.
+
+---
 
 ## Solution Approach (Initial Analysis)
 
@@ -603,6 +606,29 @@ Using the UMPIRE framework:
 
 **Evaluate:** New test passes, no existing tests broken, UnsupportedOperationException no longer thrown for FixedSizeBinary vectors
 
+---
+
+## Testing Strategy
+
+### Unit Tests
+
+- [ ] Test case 1: [Description]
+- [ ] Test case 2: [Description]
+- [ ] Test case 3: [Description]
+
+### Integration Tests
+
+- [ ] Integration scenario 1
+- [ ] Integration scenario 2
+
+### Manual Testing
+
+[What you tested manually and results]
+
+---
+
+
+## Implementation Notes
 
 ### Week 5 Progress
 
@@ -620,7 +646,43 @@ Using the UMPIRE framework, I drafted an implementation plan: locate every switc
 
 One hiccup along the way: I hit a deprecated API (`writeFixedSizeBinary(byte[])`) and had to switch to the `FixedSizeBinaryHolder`-based `write()` method instead — a good reminder to check for deprecation notices before assuming the obvious method signature is the right one.
 
+### Code Changes
 
+- **Files modified:** [List]
+- **Key commits:** [Links to important commits]
+- **Approach decisions:** [Why you chose certain approaches]
+
+---
+
+## Pull Request
+
+**PR Link:** [GitHub PR URL when submitted]
+
+**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+
+**Maintainer Feedback:**
+- [Date]: [Summary of feedback received]
+- [Date]: [How you addressed it]
+
+**Status:** [Awaiting review / Iterating / Approved / Merged]
+
+---
+
+## Learnings & Reflections
+
+### Technical Skills Gained
+
+[What you learned technically]
+
+### Challenges Overcome
+
+[What was hard and how you solved it]
+
+### What I'd Do Differently Next Time
+
+[Reflection on your process]
+
+---
 
 ## Resources Used
 
