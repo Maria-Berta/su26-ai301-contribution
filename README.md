@@ -426,7 +426,7 @@ I would grep the dependency library for the relevant keywords before writing any
 
 **Issue:** [GitHub Issue #559](https://github.com/apache/arrow-java/issues/559)
 
-**Status:** Phase II Complete.
+**Status:** Phase III Complete.
 
 ---
 
@@ -616,14 +616,16 @@ Using the UMPIRE framework:
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- [x] getListWriterForReader() returns a working writer for FIXEDSIZEBINARY — verified via testCopyListOfFixedSizeBinary
+- [x] Main copy() switch correctly reads via NullableFixedSizeBinaryHolder — verified via testCopyListOfFixedSizeBinary
+- [ ] getStructWriterForReader() correctly extracts byteWidth via ArrowType.FixedSizeBinary — implemented per maintainer guidance, to be tested
+- [ ] getMapWriterForReader() returns a working writer for FIXEDSIZEBINARY — implemented per maintainer guidance, to be tested
+- [x] testCopyListOfFixedSizeBinary passes post-fix (previously asserted the exception; now asserts successful copy)
+- [x] Full TestComplexCopier suite (21 tests) passes — no regressions
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- None performed in Phase III. All verification was unit-level via TestComplexCopier.java.
 
 ### Manual Testing
 
@@ -650,11 +652,36 @@ Using the UMPIRE framework, I drafted an implementation plan: locate every switc
 
 One hiccup along the way: I hit a deprecated API (`writeFixedSizeBinary(byte[])`) and had to switch to the `FixedSizeBinaryHolder`-based `write()` method instead — a good reminder to check for deprecation notices before assuming the obvious method signature is the right one.
 
+### Week 8 Progress
+
+This week I completed Phase III: implementing the fix across all four affected switch statements in ComplexCopier.java and getting a fully passing test.
+
+**Maintainer-guided scope correction:** Before starting, the maintainer clarified that the missing FIXEDSIZEBINARY case wasn't limited to getListWriterForReader() —it was also missing from getStructWriterForReader(), getMapWriterForReader(), and the main copy() switch. The maintainer also pointed me toward modeling the fix on the FIXED_SIZE_LIST case rather than VARBINARY, since FixedSizeBinary and FixedSizeList are both parameterized types that carry a width/size — VARBINARY doesn't need that.
+
+**The fix — four switches in the FreeMarker template:**
+1. `copy()` — reads via `NullableFixedSizeBinaryHolder`, calls `writer.writeFixedSizeBinary(holder.buffer)`
+2. `getStructWriterForReader()` — parameterized like Decimal: checks `instanceof ArrowType.FixedSizeBinary`, extracts `byteWidth` via
+   `type.getByteWidth()`, calls `writer.fixedSizeBinary(name, byteWidth)`
+3. `getListWriterForReader()` — `writer.fixedSizeBinary()` (no-arg; `ListWriter` has no byteWidth-aware overload)
+4. `getMapWriterForReader()` — same as (3)
+
+**Debugging journey:**
+
+- *Spotless failures:* blank import lines tripped the formatting check — fixed with `mvn -pl vector spotless:apply`.
+- *Edits not taking effect:* fmpp does incremental generation and reported "changed: 0" — I was staring at a stale build. Fixed by grepping the actual template (`grep -n "FIXEDSIZEBINARY" vector/src/main/codegen/templates/ComplexCopier.java`,expecting 4 matches) and force clearing `vector/target/generated-sources/fmpp` before rebuilding.
+- *The real bug — a test bug, not a production bug:* the test crashed with `UnsupportedOperationException: Cannot get simple type for type FIXEDSIZEBINARY` inside `MinorType.getType()`, called from `PromotableWriter.getWriter()`. `MinorType.FIXEDSIZEBINARY` carries a null placeholder `ArrowType` (same as `DECIMAL(null)`), and when a container's child vector for FixedSizeBinary hasn't been pre-created, the writer falls into `State.UNTYPED` and tries to auto-create the vector by calling `type.getType()` — which throws for any parameterized type with a null placeholder. Comparing against `testCopyFixedSizedListOfDecimalsVector` showed it calls `addOrGetVector(...)` on *both* `from` and `to` before writing/copying; my test only did it for `from`. Adding the matching call on `to` fixed it. All 4 template patches had been correct the whole time — this confirmed the fix was solid before the test did.
+
+**Verification:** `mvn -pl vector test -Dtest=TestComplexCopier` — all 21 test pass, no regressions.
+
+**Committed:** `GH-559: [Java] Add FixedSizeBinary support to ComplexCopier` -2 files changed, 44 insertions, 13 deletions.
+
 ### Code Changes
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+- **Files modified:**
+  - `vector/src/main/codegen/templates/ComplexCopier.java` (FreeMarker template — NOT the generated `.java`, which lives under `vector/target/generated-sources/fmpp/` and is never hand-edited)
+  - `vector/src/test/java/org/apache/arrow/vector/complex/impl/TestComplexCopier.java`
+- **Key commit:** `GH-559: [Java] Add FixedSizeBinary support to ComplexCopier` (branch: [GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary))
+- **Approach decisions:** Modeled the fix on FIXED_SIZE_LIST (parameterized type) rather than VARBINARY, per maintainer guidance. Extended the existing reproduction test in place rather than creating a new test file, matching repo convention.
 
 ---
 
