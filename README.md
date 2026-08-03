@@ -595,7 +595,6 @@ Using the UMPIRE framework:
 
 **Plan:**
 
-
 1. Clone apache/arrow-java and build locally with Maven
 2. Read ComplexCopier.java and locate all switch statements involving MinorType
 3. Find existing FixedSizeBinaryWriter usage elsewhere in the codebase for reference
@@ -604,11 +603,17 @@ Using the UMPIRE framework:
 6. Run mvn test to confirm fix and no regressions
 
 
-**Implement:** [GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary)(implementation to be added)
+**Implement:** Fix implemented across all 4 switch statements identified by the maintainer (`getListWriterForReader()`, `getStructWriterForReader()`, `getMapWriterForReader()`, and the main `copy()` switch) in [GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary). Extended test coverage beyond the original reproduction test to include Struct-nested FixedSizeBinary. See Week 8 Progress below for the full debugging journey.
 
-**Review:** Follow Apache Arrow Java contribution guidelines — code style, license headers, test coverage
+**Review:** Followed Apache Arrow Java contribution guidelines — ran `spotless:apply` and `checkstyle:check` before each commit, used the `GH-559: [Java] <description>` commit/PR title convention, rebased cleanly onto `upstream/main` before opening the PR.
 
-**Evaluate:** New test passes, no existing tests broken, UnsupportedOperationException no longer thrown for FixedSizeBinary vectors
+
+**Evaluate:** 
+
+- [x] New tests pass (`testCopyListOfFixedSizeBinary`, `testCopyStructOfFixedSizeBinary`)
+- [x] No existing tests broken — full `TestComplexCopier` suite (22 tests) passes
+- [x] `UnsupportedOperationException` no longer thrown for FixedSizeBinary vectors in List and Struct contexts
+- [ ] Map context — implemented per maintainer guidance, but a pre-existing gap in the writer codegen (unrelated to this fix) meant I couldn't construct a passing test; documented transparently in the PR description
 
 ---
 
