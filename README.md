@@ -245,10 +245,10 @@ Using UMPIRE framework (adapted):
 **Review:** Change is minimal, focused, and does not modify any parser library code. Only affects the string pre-processing step in one method.
 
 **Evaluate:** 
-- [ ] Foreign keys shown correctly in Relation View for system-versioned tables ✅ (verified visually)
-- [ ] Foreign keys still work correctly for non-versioned tables (no regression)
-- [ ] New test case passes
-- [ ] All existing tests still pass
+- [X] Foreign keys shown correctly in Relation View for system-versioned tables ✅ (verified visually)
+- [X] Foreign keys still work correctly for non-versioned tables (no regression)
+- [X] New test case passes
+- [X] All existing tests still pass
   
 ---
 
@@ -256,16 +256,16 @@ Using UMPIRE framework (adapted):
 
 ### Unit Tests
 
-- [ ] getForeignKeysData() correctly returns foreign keys when SHOW CREATE TABLE includes PERIOD FOR SYSTEM_TIME
-- [ ] getForeignKeysData() correctly returns foreign keys when SHOW CREATE TABLE includes GENERATED ALWAYS AS ROW START/END columns
-- [ ] getForeignKeysData() still works correctly for non-versioned tables (regression check)
-- [ ] Regex handles both backtick-quoted and unquoted column names
+- [X] getForeignKeysData() correctly returns foreign keys when SHOW CREATE TABLE includes PERIOD FOR SYSTEM_TIME
+- [X] getForeignKeysData() correctly returns foreign keys when SHOW CREATE TABLE includes GENERATED ALWAYS AS ROW START/END columns
+- [X] getForeignKeysData() still works correctly for non-versioned tables (regression check)
+- [X] Regex handles both backtick-quoted and unquoted column names
 
 ### Integration Tests
 
-- [ ]  Relation View on a system-versioned table shows the foreign key correctly
-- [ ]  Browse tab shows clickable FK links for system-versioned tables
-- [ ]  Non-versioned tables are unaffected
+- [X]  Relation View on a system-versioned table shows the foreign key correctly
+- [X]  Browse tab shows clickable FK links for system-versioned tables
+- [X]  Non-versioned tables are unaffected
 
 
 ### Manual Testing
