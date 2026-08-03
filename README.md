@@ -426,7 +426,7 @@ I would grep the dependency library for the relevant keywords before writing any
 
 **Issue:** [GitHub Issue #559](https://github.com/apache/arrow-java/issues/559)
 
-**Status:** Phase III Complete.
+**Status:** Phase IV Complete — PR Submitted, Awaiting Review
 
 ---
 
@@ -618,18 +618,20 @@ Using the UMPIRE framework:
 
 - [x] getListWriterForReader() returns a working writer for FIXEDSIZEBINARY — verified via testCopyListOfFixedSizeBinary
 - [x] Main copy() switch correctly reads via NullableFixedSizeBinaryHolder — verified via testCopyListOfFixedSizeBinary
-- [ ] getStructWriterForReader() correctly extracts byteWidth via ArrowType.FixedSizeBinary — implemented per maintainer guidance, to be tested
-- [ ] getMapWriterForReader() returns a working writer for FIXEDSIZEBINARY — implemented per maintainer guidance, to be tested
+- [X] getStructWriterForReader() correctly extracts byteWidth via ArrowType.FixedSizeBinary — verified via testCopyStructOfFixedSizeBinary
+- [ ] getMapWriterForReader() returns a working writer for FIXEDSIZEBINARY — implemented per maintainer guidance, but could not construct a passing test (see Week 8 Progress for root cause)
 - [x] testCopyListOfFixedSizeBinary passes post-fix (previously asserted the exception; now asserts successful copy)
 - [x] Full TestComplexCopier suite (21 tests) passes — no regressions
 
 ### Integration Tests
 
-- None performed in Phase III. All verification was unit-level via TestComplexCopier.java.
+- [x] `testCopyListOfFixedSizeBinary` passes post-fix — previously asserted the exception; now asserts a successful copy via `VectorEqualsVisitor.vectorEquals`
+- [x] `testCopyStructOfFixedSizeBinary` — new test added for Struct-nested FixedSizeBinary coverage
+- [x] Full `TestComplexCopier` suite (22 tests) passes — no regressions introduced by the 4 template edits
 
 ### Manual Testing
 
-[What you tested manually and results]
+Ran the full `TestComplexCopier` suite locally after each change via `mvn -pl vector test -Dtest=TestComplexCopier`, confirming 22/22 passing with zero errors before opening the PR.
 
 ---
 
@@ -675,27 +677,89 @@ This week I completed Phase III: implementing the fix across all four affected s
 
 **Committed:** `GH-559: [Java] Add FixedSizeBinary support to ComplexCopier` -2 files changed, 44 insertions, 13 deletions.
 
+
+### Week 9 Progress
+
+This week I completed Phase III (implementation) and Phase IV (PR submission).
+
+**Implementation:** Added a `FIXEDSIZEBINARY` case to all 4 switch statements identified by the maintainer: `getListWriterForReader()`, `getStructWriterForReader()`, `getMapWriterForReader()`, and the main `copy()` switch — all in the `ComplexCopier.java` FreeMarker template. Followed the maintainer's guidance to model the fix on `FIXED_SIZE_LIST` rather than `VARBINARY`, since FixedSizeBinary is a parameterized type (it carries a `byteWidth`).
+
+**Debugging journey:**
+- First hit spotless formatting failures (blank import lines) — resolved with `mvn -pl vector spotless:apply`.
+- Then discovered my template edits weren't taking effect — the FreeMarker `fmpp` plugin reported `changed: 0` because incremental generation wasn't picking up the diff. Resolved by verifying edits landed in the real template path (`grep -n "FIXEDSIZEBINARY" ...ComplexCopier.java`) and force-regenerating via `rm -rf vector/target/generated-sources/fmpp` before rebuilding.
+- The most instructive bug: my test crashed with `UnsupportedOperationException: Cannot get simple type for type FIXEDSIZEBINARY`, thrown from `MinorType.getType()` deep in `PromotableWriter`. I traced this to `MinorType.FIXEDSIZEBINARY` having a null placeholder `ArrowType` (the same shape as `DECIMAL`) — when a container's child vector isn't pre-created, the writer tries to auto-create it via `type.getType()`, which throws for any parameterized type with a null placeholder. Comparing against the existing `testCopyFixedSizedListOfDecimalsVector`, I found it calls `addOrGetVector(...)` on **both** `from` and `to` before writing — my test only did it for `from`. Adding the matching `to.addOrGetVector(...)` line fixed it. This was a test-setup bug, not a production code bug — my 4 template patches were correct all along.
+
+**Extended test coverage:** Beyond the required List case, I added `testCopyStructOfFixedSizeBinary` to cover the Struct path, since `getStructWriterForReader()` has meaningfully different logic (it extracts `byteWidth` from the reader's `ArrowType` rather than relying on a no-arg writer call).
+
+**Map coverage — investigated, not completed:** I attempted `testCopyMapVectorWithFixedSizeBinaryValue` but hit a `NullPointerException` during test *setup* (before `ComplexCopier.copy()` was ever called). Tracing the stack, I found `MapWriter`/`ListWriter`'s no-arg `fixedSizeBinary()` delegates internally to `NullableStructWriter.fixedSizeBinary(String name)` — a by-name lookup method that only retrieves an *existing* writer and never creates one. Only the byteWidth-supplying overload (`fixedSizeBinary(name, byteWidth)`) actually creates the underlying vector, and that overload isn't reachable through the public `MapWriter`/`ListWriter` interface. This is a pre-existing gap in the generated writer codegen, unrelated to my `ComplexCopier.java` fix. I documented this limitation in the PR description rather than silently dropping the test case.
+
+**Final verification:** Ran the full `TestComplexCopier` suite (22 tests) — all passing, no regressions.
+
+**PR submitted:** Opened [PR #1253](https://github.com/apache/arrow-java/pull/1253), rebased cleanly onto the latest `upstream/main`, and linked it to close issue #559. Left a courtesy comment on the issue thread for another contributor (`@axreldable`) who had prior commits referenced in the issue history, to avoid duplicated effort.
+
+
 ### Code Changes
 
 - **Files modified:**
-  - `vector/src/main/codegen/templates/ComplexCopier.java` (FreeMarker template — NOT the generated `.java`, which lives under `vector/target/generated-sources/fmpp/` and is never hand-edited)
+  - `vector/src/main/codegen/templates/ComplexCopier.java` (FreeMarker template — the actual generated `.java` file is never hand-edited)
   - `vector/src/test/java/org/apache/arrow/vector/complex/impl/TestComplexCopier.java`
-- **Key commit:** `GH-559: [Java] Add FixedSizeBinary support to ComplexCopier` (branch: [GH-559-complex-copier-fixed-size-binary](https://github.com/Maria-Berta/arrow-java/tree/GH-559-complex-copier-fixed-size-binary))
-- **Approach decisions:** Modeled the fix on FIXED_SIZE_LIST (parameterized type) rather than VARBINARY, per maintainer guidance. Extended the existing reproduction test in place rather than creating a new test file, matching repo convention.
+- **Key commits:**
+  - [`447f2b5`](https://github.com/Maria-Berta/arrow-java/commit/447f2b5cdda77bd50e9c6b239a5b4aa922dd21c5) — Add reproduction test for FixedSizeBinary ComplexCopier bug
+  - [`4720c1b`](https://github.com/Maria-Berta/arrow-java/commit/4720c1beb6741948cea52325420241f1b361b062) — Add FixedSizeBinary support to ComplexCopier
+  - [`383c808`](https://github.com/Maria-Berta/arrow-java/commit/383c8088fedad395108a1419cf10c58580bb0c4c) — Add test coverage for FixedSizeBinary in Struct
+- **Approach decisions:** Modeled the fix on `FIXED_SIZE_LIST` rather than `VARBINARY` per maintainer guidance, since both are parameterized types carrying a width. Kept the fix contained entirely to the 4 switch statements the maintainer identified, rather than attempting to also patch the deeper `MapWriter`/`ListWriter` codegen gap discovered along the way — that issue is out of scope for #559 and was instead flagged transparently in the PR description.
 
 ---
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when submitted]
+**PR Link:** [GH-559: [Java] Add FixedSizeBinary support to ComplexCopier #1253](https://github.com/apache/arrow-java/pull/1253)
 
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+**PR Description:** 
+
+Rationale for this change
+
+ComplexCopier did not support copying FixedSizeBinary columns nested in
+List, Map, Struct, or top-level contexts, throwing
+UnsupportedOperationException.
+
+What changes are included in this PR?
+
+Adds FIXEDSIZEBINARY cases to:
+
+getListWriterForReader
+getStructWriterForReader
+getMapWriterForReader
+the main copy() switch
+Are these changes tested?
+
+Yes:
+
+testCopyListOfFixedSizeBinary — copying a List<FixedSizeBinary>
+testCopyStructOfFixedSizeBinary — copying a Struct field of type
+FixedSizeBinary
+
+Full TestComplexCopier suite (22 tests) passes with no regressions.
+
+Note: I attempted to add equivalent coverage for Map values of type
+FixedSizeBinary, but ran into a pre-existing limitation unrelated to
+this fix — MapWriter/ListWriter's no-arg fixedSizeBinary() delegates
+to NullableStructWriter.fixedSizeBinary(String), which only looks up
+an existing child writer and never creates one. The byteWidth-aware
+overload that does create the vector isn't reachable through the
+public MapWriter/ListWriter interface. This appears to be a gap in
+the writer codegen itself rather than something ComplexCopier can
+work around, so I've left it untested here — happy to open a
+follow-up issue if that's useful, or take a stab at it if maintainers
+think it's in scope for this PR.
+
+Closes #559
 
 **Maintainer Feedback:**
 - [Date]: [Summary of feedback received]
 - [Date]: [How you addressed it]
 
-**Status:** [Awaiting review / Iterating / Approved / Merged]
+**Status:** Awaiting review 
 
 ---
 
@@ -703,15 +767,19 @@ This week I completed Phase III: implementing the fix across all four affected s
 
 ### Technical Skills Gained
 
-[What you learned technically]
+- Learned how Apache Arrow's Java codegen pipeline works — `ComplexCopier.java` is a FreeMarker template, not a plain source file, and understanding the `fmpp` Maven plugin's incremental-generation behavior was essential to avoid silently editing a file that never took effect
+- Deepened understanding of Arrow's writer/reader abstraction layers — `FieldWriter`, `PromotableWriter`, `AbstractPromotableFieldWriter` — and how parameterized types (Decimal, FixedSizeBinary) are handled differently from simple scalar types
+- Learned to trace a runtime exception through several layers of generated code back to its root cause in a codegen template
+- Practiced writing focused unit tests that isolate a single writer path (List vs. Struct vs. Map) rather than one broad test
+- Learned to recognize when a bug is out of scope for the current issue — distinguishing "my fix has a problem" from "this reveals a separate, pre-existing limitation" — and how to document that distinction transparently in a PR rather than either hiding it or scope-creeping into fixing it
 
 ### Challenges Overcome
 
-[What was hard and how you solved it]
+The trickiest part of this contribution was a test that crashed with a confusing `NullPointerException` deep inside generated code, several layers removed from anything I'd written. Rather than assuming my fix was wrong, I traced the stack trace method-by-method back through `PromotableWriter` and `AbstractPromotableFieldWriter` to find the actual root cause — comparing my failing test against an existing, passing test for a structurally similar type (Decimal) to spot the one meaningful difference (`addOrGetVector` pre-registration on both the source and destination vector). That comparison-driven debugging approach was far more effective than guessing.
 
 ### What I'd Do Differently Next Time
 
-[Reflection on your process]
+I'd verify a template edit actually landed in generated output *before* writing and running an entire test — a quick `grep` immediately after editing would have caught the "stale copy" issue faster. I'd also start by writing the simplest possible test case for a new feature (a flat scalar field) before writing more complex nested cases (List, Struct, Map), since the simplest case surfaces the core bug fastest without extra layers of complexity to debug through.
 
 ---
 
@@ -721,3 +789,4 @@ This week I completed Phase III: implementing the fix across all four affected s
 - [Apache Arrow Java GitHub Issue #559](https://github.com/apache/arrow-java/issues/559)
 - [Apache Arrow Contributor Guide](https://arrow.apache.org/docs/developers/guide/index.html)
 - [Apache Arrow Java Repository](https://github.com/apache/arrow-java)
+- [Apache Arrow Java PR #1253](https://github.com/apache/arrow-java/pull/1253)
