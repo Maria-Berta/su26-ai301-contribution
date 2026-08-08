@@ -703,6 +703,19 @@ This week I completed Phase III (implementation) and Phase IV (PR submission).
 **PR submitted:** Opened [PR #1253](https://github.com/apache/arrow-java/pull/1253), rebased cleanly onto the latest `upstream/main`, and linked it to close issue #559. Left a courtesy comment on the issue thread for another contributor (`@axreldable`) who had prior commits referenced in the issue history, to avoid duplicated effort.
 
 
+### Week 10 Progress
+
+This is the final week of the course, and both of my contributions are currently blocked on maintainer response rather than anything actionable on my end.
+
+**Contribution #1 (phpMyAdmin #20346):** All requested changes from `williamdes`'s July 7 review are complete — the branch is rebased onto `QA_5_2`, the fix is cherry-picked, and 4 new PHPUnit tests are added and passing. Both PR checks ("All checks have passed" and "No conflicts with base branch") are green. It has now been about a month since I pushed these changes with no further response. I left a follow-up comment checking in on status and confirming everything is still in a mergeable state.
+
+**Contribution #2 (Apache Arrow Java #1253):** The PR is open with all 3 commits (reproduction test, main fix across 4 switch statements, and Struct test coverage) and 2 of 3 CI checks passing. The one failing check ("Ensure PR is labeled") requires a maintainer to add a label, since external contributors don't have permission to label PRs on this repo. I left a comment tagging the requested reviewers asking for a label to be added so the check can pass.
+
+**Why I didn't open a third issue:** With only one week of class remaining, there wasn't enough runway left to complete all four phases (issue selection, reproduction, implementation, and PR submission/iteration) on a brand-new issue. Rather than starting something I couldn't finish properly, I focused this week on making sure both existing contributions were in the best possible state to hand off — fully addressed feedback, all tests passing, and clear, specific asks left for maintainers so the PRs can move forward without me even after the course ends.
+
+**What's left:** Both PRs are in maintainers' hands now. My plan is to keep checking back periodically after the course concludes, since seeing an open source contribution through to merge (or through further review rounds) is valuable regardless of whether it's still being graded.
+
+
 ### Code Changes
 
 - **Files modified:**
